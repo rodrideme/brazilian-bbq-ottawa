@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Churrasco Meat Price Tracker — Ottawa</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #faf6f0; color: #2a2118;
+}
+h1 { color: #7B3F00; margin: 0 0 4px; font-size: 22px; }
+.sub { color: #6b5d4f; font-size: 13px; margin: 0 0 18px; }
+.card {
+  background: #fff; border: 1px solid #e7ddd0; border-radius: 10px;
+  padding: 16px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.card h2 { margin: 0 0 12px; font-size: 15px; color: #7B3F00; }
+label { font-size: 12px; color: #6b5d4f; display: block; margin-bottom: 3px; }
+input, select {
+  font-family: inherit; font-size: 14px; padding: 7px 8px;
+  border: 1px solid #cdbfae; border-radius: 6px;
+  background: #fff; color: #2a2118; width: 100%;
+}
+.addgrid {
+  display: grid; gap: 10px;
+  grid-template-columns: 1.1fr 1.2fr .7fr .6fr .6fr 1.3fr 1.3fr auto;
+  align-items: end;
+}
+button {
+  font-family: inherit; font-size: 14px; font-weight: bold;
+  padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer;
+}
+.btn-add { background: #7B3F00; color: #fff; }
+.btn-add:hover { background: #613100; }
+.btn-ghost { background: #f0e7db; color: #7B3F00; font-weight: normal; }
+.btn-ghost:hover { background: #e7dac8; }
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.toolbar .grow { flex: 1; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  background: #7B3F00; color: #fff; text-align: left; padding: 9px 8px;
+  position: sticky; top: 0; font-size: 12px;
+}
+td { padding: 6px 8px; border-bottom: 1px solid #eee3d5; vertical-align: middle; }
+tr.cheapest td { background: #eaf7ec; }
+.cut-head td {
+  background: #f3ebe0; color: #7B3F00; font-weight: bold; font-size: 13px;
+  border-bottom: 2px solid #e0d2bf;
+}
+.cell-in { width: 82px; padding: 5px 6px; }
+.cell-unit { width: 62px; padding: 5px 4px; }
+.cell-link { width: 150px; padding: 5px 6px; font-size: 12px; }
+.cell-grade { width: 68px; padding: 5px 6px; font-size: 12px; text-align: center; }
+.open { margin-left: 6px; color: #0645ad; text-decoration: none; font-weight: bold; }
+.open:hover { text-decoration: underline; }
+.open.notdirect { color: #b06a1a; font-size: 11px; white-space: nowrap; }
+.money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.badge {
+  display: inline-block; background: #1B7A2F; color: #fff;
+  font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; margin-left: 6px;
+}
+.tag-live { color: #0645ad; font-size: 11px; }
+.tag-no { color: #b23; font-size: 10px; font-weight: bold; background: #fdeaea; padding: 1px 5px; border-radius: 8px; }
+tr.nodeliver td:not(:last-child) { opacity: .55; }
+tr.nodeliver .money b { text-decoration: line-through; }
+.notes { color: #6b5d4f; font-size: 12px; }
+.grill { white-space: nowrap; letter-spacing: 1px; }
+.grill span { cursor: pointer; font-size: 16px; line-height: 1; display: inline-block; }
+.grill span.on { color: #e0a100; }
+.grill span.off { color: #ddd3c4; }
+.grill span:hover { transform: scale(1.2); }
+.del { background: none; color: #b23; font-size: 16px; padding: 2px 8px; }
+.del:hover { color: #7a0f1c; }
+.muted { color: #a89a88; }
+.footer { font-size: 12px; color: #8a7c6b; margin-top: 10px; }
+.photo-tip { margin-top: 12px; padding: 10px 12px; background: #fff4e0; border: 1px solid #f0d9a8;
+  border-radius: 8px; font-size: 13px; color: #6b4e1f; line-height: 1.4; }
+.photo-tip b { color: #7B3F00; }
+.pill { font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 1px solid #cdbfae; background: #fff; cursor: pointer; }
+.pill.active { background: #7B3F00; color: #fff; border-color: #7B3F00; }
+.catpill { font-weight: bold; }
+.catpill.active { background: #1B7A2F; border-color: #1B7A2F; }
+.cutlbl { font-size: 12px; color: #8a7c6b; }
+.cat-badge { font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+.cat-badge.br { background: #e7f4ea; color: #1B7A2F; border: 1px solid #b7e0c2; }
+.cat-badge.ot { background: #eef2f7; color: #4a5a70; border: 1px solid #cdd8e6; }
+</style>
+</head>
+<body>
+<h1>🔥 Churrasco Meat Price Tracker</h1>
+<p class="sub">Base: 320 Avondale Ave, Ottawa · prices in CAD · enter price + weight in any unit (kg / lb / oz) and it compares by $/kg. Everything you type is saved in this browser automatically.</p>
+
+<div class="card">
+  <h2>Add an item</h2>
+  <div class="addgrid">
+    <div><label>Cut</label><input id="f-cut" list="cutlist" placeholder="e.g. Picanha"></div>
+    <div><label>Shop</label><input id="f-shop" placeholder="e.g. Costco"></div>
+    <div><label>Price ($)</label><input id="f-price" type="number" step="0.01" min="0" placeholder="0.00"></div>
+    <div><label>Weight</label><input id="f-weight" type="number" step="0.01" min="0" placeholder="0"></div>
+    <div><label>Unit</label>
+      <select id="f-unit"><option>kg</option><option>lb</option><option>oz</option></select></div>
+    <div><label>Notes (optional)</label><input id="f-notes" placeholder="grade, sale…"></div>
+    <div><label>Offer link (optional)</label><input id="f-link" placeholder="https://…"></div>
+    <div><button class="btn-add" id="addBtn">Add</button></div>
+  </div>
+  <datalist id="cutlist"></datalist>
+  <div class="photo-tip">📷 <b>At the store?</b> Snap a photo of the price tag with your phone and send it to me in the Claude chat — I'll read the price, weight and unit off the tag and add the row here for you. (This page can't open the camera itself, so the photo goes through chat.)</div>
+</div>
+
+<div class="card">
+  <div class="toolbar">
+    <strong style="color:#7B3F00">Comparison</strong>
+    <span id="catfilters"></span>
+    <span class="grow"></span>
+    <button class="btn-ghost" id="resetBtn">Reset to starting data</button>
+  </div>
+  <div class="toolbar" style="margin-top:6px"><span class="cutlbl">Cut:</span><span id="filters"></span></div>
+  <div style="overflow-x:auto">
+    <table id="tbl">
+      <thead><tr>
+        <th>Shop</th><th>Price&nbsp;($)</th><th>Weight</th><th>Unit</th>
+        <th>$ / kg</th><th>$ / lb</th><th>Grade</th><th>Grill<br>rating</th><th>Notes</th><th>Offer link</th><th></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="footer">Green row = cheapest $/kg for that cut. Blue "live" tag = price I fetched Jul 2026 (a snapshot — verify before buying). ★ Grill rating = how good the cut is for churrasco (0–5, strict) — click a star to set it, or click the last filled star to clear to 0. Offer link: ↗ = direct product page; orange "browse ⚠" = a store/search/category page (no direct product link), so verify the exact item and price. Grade: AAA / AA / A / Prime are regulated Canada grades (marbling); "Angus" is breed/brand marketing, not a grade; "n/s" = grade not stated on the listing. Prices change; buttons and edits save instantly.</div>
+</div>
+
+<script>
+const KEY = 'churrasco_items_v2';
+const LB = 0.45359237, OZ = 0.0283495231;
+
+const SEED = [
+  {cut:'Picanha', shop:'Nosso Talho', price:55, weight:3.625, unit:'lb', live:true, noDeliver:true, notes:'AAA+ 3.5–3.75lb · GTA delivery only — does NOT deliver to Ottawa (price shown for reference)', link:'https://nossotalho.com/products/picanha'},
+  {cut:'Picanha', shop:'Wiser Meats', price:102, weight:4, unit:'lb', live:true, notes:'AAA grass-fed · sale (reg $194)', link:'https://www.wisermeats.com/products/beef-picanha-roast-4lb-aaa-ontario-40-days-aged-beef-fat-cap-on'},
+  {cut:'Picanha', shop:'Ottawa Valley Meats', price:98, weight:2.75, unit:'lb', live:true, notes:'AAA Black Angus roast 2.5–3lb', link:'https://ottawavalleymeats.com/products/picanha-roast-grass-fed'},
+  {cut:'Picanha', shop:'Costco', price:78.92, weight:3.158, unit:'kg', live:true, notes:'TOP SIRLOIN CAP WHOLE (= picanha) · Costco Merivale, Nepean · $24.99/kg · from your photo', link:'https://sameday.costco.ca/store/costco-canada/collections/beef'},
+  {cut:'Picanha', shop:'Real Canadian Superstore', price:'', weight:'', unit:'lb', live:false, notes:'Ask for "top sirloin cap"', link:'https://www.realcanadiansuperstore.ca/en/food/meat/beef/beef-steaks-roasts/c/29651'},
+  {cut:'Fraldinha', shop:'Wiser Meats', price:24.5, weight:12, unit:'oz', live:true, notes:'AAA grass-fed · sale (reg $42)', link:'https://www.wisermeats.com/products/beef-flank-steak-12oz-40-days-aged-aaa-ontario-grass-fed'},
+  {cut:'Fraldinha', shop:'Real Canadian Superstore', price:'', weight:'', unit:'kg', live:false, notes:'Flank grilling steak · ~$40–48/kg', link:'https://www.realcanadiansuperstore.ca/en/food/meat/beef/beef-steaks-roasts/c/29651'},
+  {cut:'Costela', shop:'Wiser Meats', price:275, weight:15, unit:'lb', live:true, notes:'AAA back ribs · 4 racks · sale (reg $325)', link:'https://www.wisermeats.com/products/beef-back-ribs-15lb-average-aaa-40-days-aged-ontario-beef'},
+  {cut:'Costela', shop:'Costco', price:'', weight:'', unit:'kg', live:false, notes:'AAA beef back ribs ~2kg packs · ~$16–20/kg', link:'https://sameday.costco.ca/store/costco-canada/collections/beef/subjects/109'},
+  {cut:'Ancho (Ribeye)', shop:'Costco', price:'', weight:'', unit:'kg', live:false, notes:'AAA boneless ribeye · ~$25/kg', link:'https://sameday.costco.ca/store/costco-canada/collections/beef'},
+  {cut:'Ancho (Ribeye)', shop:'Real Canadian Superstore', price:'', weight:'', unit:'kg', live:false, notes:'PC Certified Angus · ~$48–53/kg', link:'https://www.realcanadiansuperstore.ca/en/certified-angus-beef-grilling-ribeye-steak-boneles/p/20801988_KG'},
+  {cut:'Alcatra', shop:'Costco', price:'', weight:'', unit:'kg', live:false, notes:'Top sirloin · ~$22–28/kg', link:'https://sameday.costco.ca/store/costco-canada/collections/beef'},
+  {cut:'Linguiça', shop:'Portuguese / Latin market', price:'', weight:'', unit:'lb', live:false, notes:'~$9–13/lb', link:'https://www.google.com/maps/search/portuguese+butcher+ottawa'},
+  {cut:'Coração', shop:'Specialty butcher', price:'', weight:'', unit:'lb', live:false, notes:'Chicken hearts · ~$6–9/lb', link:'https://www.google.com/maps/search/chicken+hearts+butcher+ottawa'},
+  // local shops you flagged — all deliver to / serve Ottawa
+  {cut:'Ancho (Ribeye)', shop:'Farm 2 Fork', price:299, weight:7.5, unit:'lb', live:true, notes:'10× Angus 28-day-aged ribeye 12oz (7.5lb) · delivers Ottawa, free >$199', link:'https://www.farm2forkdelivery.ca/products/angus-ribeye-steaks'},
+  {cut:'Alcatra', shop:'Farm 2 Fork', price:129, weight:3.75, unit:'lb', live:true, notes:'10× 6oz baseball-cut top sirloin (3.75lb) · grass-fed 28-day · delivers Ottawa free >$199', link:'https://www.farm2forkdelivery.ca/products/grass-fed-top-sirloin-steaks'},
+  {cut:'Ancho (Ribeye)', shop:'Wiser Meats', price:750, weight:15, unit:'lb', live:true, notes:'Whole boneless ribeye 15lb · AAA grass-fed 40-day · sale (reg $985) · delivers Ottawa', link:'https://www.wisermeats.com/products/beef-whole-ribeye-boneless-15lb-ontario-aaa-grass-fed-40-days-aged'},
+  {cut:'Picanha', shop:"Slipacoff's Premium Meats", price:'', weight:'', unit:'lb', live:false, notes:'77-yr Ottawa butcher · custom cuts, ask for picanha · free delivery >$250 · 613-260-7444', link:'https://premiummeatsonline.ca/collections/beef-new'},
+  {cut:'Picanha', shop:'The Piggy Market', price:'', weight:'', unit:'lb', live:false, notes:'Westboro craft butcher · cuts to order, call 613-371-6124 · local delivery', link:'https://thepiggymarket.com/butchers/'},
+  {cut:'Fraldinha', shop:'The Piggy Market', price:'', weight:'', unit:'lb', live:false, notes:'Cuts to order · call 613-371-6124', link:'https://thepiggymarket.com/butchers/'},
+  {cut:'Coração', shop:'The Piggy Market', price:'', weight:'', unit:'lb', live:false, notes:'Craft butcher, custom poultry cuts · call 613-371-6124', link:'https://thepiggymarket.com/butchers/'},
+  // good-value Canadian/American cuts — not always a Brazilian match, but great for the grill/BBQ
+  {cut:'Brisket', shop:"Slipacoff's Premium Meats", price:180, weight:13.5, unit:'lb', live:true, notes:'AAA Canadian whole brisket 12–15lb · 21-day aged · superb smoked/low-&-slow · delivers Ottawa', link:'https://premiummeatsonline.ca/collections/beef-new/products/aaa-beef-brisket'},
+  {cut:'Striploin (NY strip)', shop:"Slipacoff's Premium Meats", price:99, weight:5.625, unit:'lb', live:true, notes:'7–8oz ×12 steaks · grade NOT stated on listing (ask — may be lower than AAA) · sale $99 · delivers Ottawa', link:'https://premiummeatsonline.ca/collections/product-specials/products/sale-aaa-angus-striploin-steak-7-8-oz-7-for-77-copy'},
+  {cut:'Striploin (NY strip)', shop:"Slipacoff's Premium Meats (AAA)", price:137, weight:5.9375, unit:'lb', live:true, grade:'AAA', notes:'AAA Angus 9–10oz ×10 · 35-day aged · sale $137 · graded AAA (pricier than their ungraded $99 pack)', link:'https://premiummeatsonline.ca/products/aaa-angus-striploin-steak-5-for-75-copy'},
+  {cut:'Striploin (NY strip)', shop:'Farm 2 Fork', price:269, weight:8.59, unit:'lb', live:true, notes:'25× 5–6oz tissue-end steaks · AAA 28-day · sale (reg $336) · delivers Ottawa', link:'https://www.farm2forkdelivery.ca/products/striploin-special-1'},
+  {cut:'Striploin (NY strip)', shop:'Wiser Meats', price:41, weight:0.75, unit:'lb', live:true, notes:'Single 12oz centre-cut · Black Angus 40-day · sale (reg $53) — premium single steak, hence high $/lb', link:'https://www.wisermeats.com/products/beef-ny-striploin-steak-centre-cut-12oz-black-angus-40-days-aged-grass-fed-ontario'},
+  {cut:'Ground beef', shop:'Farm 2 Fork', price:99, weight:10, unit:'lb', live:true, notes:'Grass-fed medium ground · 10×1lb · for burgers · delivers Ottawa free >$199', link:'https://www.farm2forkdelivery.ca/products/grass-fed-medium-ground-beef'},
+  {cut:'Ancho (Ribeye)', shop:"Slipacoff's Premium Meats", price:'', weight:'', unit:'lb', live:false, notes:'AAA Angus 35-day ribeye · from $19.95/steak (~10oz) — ask weight to compare', link:'https://premiummeatsonline.ca/collections/beef-new/products/angus-ribeye'},
+  {cut:'Skirt steak', shop:'Wiser Meats', price:'', weight:'', unit:'oz', live:false, notes:'Entraña — excellent churrasco-style cut · 12oz AAA 40-day · check price', link:'https://www.wisermeats.com/products/beef-skirt-steak-40-days-aged-aaa-ontario-grass-fed-beef-12oz'},
+  {cut:'Tenderloin (Filet)', shop:'Wiser Meats', price:359, weight:7, unit:'lb', live:true, notes:'Whole 7lb tenderloin · AAA 40-day · sale (reg $502) · cut your own filets = best value', link:'https://www.wisermeats.com/products/beef-tenderloin-7lb-aaa-40-days-aged-ontario-grass-fed-halal-beef'},
+  {cut:'Tenderloin (Filet)', shop:"Slipacoff's Premium Meats", price:27.85, weight:8, unit:'oz', live:true, notes:'Single 8oz filet mignon · AAA 35-day · delivers Ottawa', link:'https://premiummeatsonline.ca/products/aaa-beef-tenderloin'},
+];
+
+let items = load();
+let filter = 'All';
+let catFilter = 'all';
+
+// which cut names count as Brazilian churrasco (everything else = "other cut")
+const CHURRASCO = ['Picanha','Fraldinha','Costela','Ancho (Ribeye)','Alcatra','Linguiça','Coração'];
+function catOf(cut){ return CHURRASCO.includes(cut) ? 'churrasco' : 'other'; }
+
+// default "how good for the grill / churrasco" rating (0–5) by cut; strict — editable per row
+const RATING = {
+  'Picanha':5, 'Fraldinha':5, 'Ancho (Ribeye)':5, 'Skirt steak':5,   // prime churrasco steaks
+  'Linguiça':4, 'Coração':4, 'Striploin (NY strip)':4, 'Costela':4,   // very good on the grill
+  'Alcatra':3,                                                        // decent, leaner
+  'Brisket':2,                                                        // BBQ smoker cut, not quick-grill
+  'Ground beef':1                                                     // burgers, not churrasco
+};
+function ratingOf(it){ return it.rating!=null ? it.rating : (RATING[it.cut] ?? 2); }
+
+// a link is "direct" if it points at a product detail page (Shopify /products/ or grocery /p/SKU)
+function isDirect(url){ return !!url && (/\/products\//.test(url) || /\/p\/[A-Za-z0-9]/.test(url)); }
+
+// Canada beef grade as stated on each listing. AAA/AA/A/Prime = regulated grades;
+// "Angus"/"Cert.Angus" = breed/brand (marketing, not a grade); "n/s" = not stated; "—"/"n/a" = unknown/not applicable
+const GRADES = {
+  "Picanha|Nosso Talho":"AAA+", "Picanha|Wiser Meats":"AAA", "Picanha|Ottawa Valley Meats":"AAA",
+  "Picanha|Costco":"n/s", "Picanha|Real Canadian Superstore":"—", "Picanha|Slipacoff's Premium Meats":"—",
+  "Picanha|The Piggy Market":"—",
+  "Fraldinha|Wiser Meats":"AAA", "Fraldinha|Real Canadian Superstore":"—", "Fraldinha|The Piggy Market":"—",
+  "Costela|Wiser Meats":"AAA", "Costela|Costco":"AAA", "Costela|Real Canadian Superstore":"—",
+  "Ancho (Ribeye)|Costco":"AAA", "Ancho (Ribeye)|Real Canadian Superstore":"Cert.Angus",
+  "Ancho (Ribeye)|Wiser Meats":"AAA", "Ancho (Ribeye)|Farm 2 Fork":"Angus", "Ancho (Ribeye)|Slipacoff's Premium Meats":"AAA",
+  "Alcatra|Costco":"—", "Alcatra|Real Canadian Superstore":"—", "Alcatra|Farm 2 Fork":"—",
+  "Linguiça|Portuguese / Latin market":"n/a", "Linguiça|Real Canadian Superstore":"n/a",
+  "Coração|Specialty butcher":"n/a", "Coração|The Piggy Market":"n/a",
+  "Brisket|Slipacoff's Premium Meats":"AAA",
+  "Striploin (NY strip)|Slipacoff's Premium Meats":"n/s", "Striploin (NY strip)|Farm 2 Fork":"AAA", "Striploin (NY strip)|Wiser Meats":"Angus",
+  "Ground beef|Farm 2 Fork":"—",
+  "Skirt steak|Wiser Meats":"AAA",
+  "Tenderloin (Filet)|Wiser Meats":"AAA", "Tenderloin (Filet)|Slipacoff's Premium Meats":"AAA"
+};
+function gradeOf(it){ return it.grade!=null ? it.grade : (GRADES[it.cut+'|'+it.shop] ?? ''); }
+
+function load(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      // migrate: backfill offer links onto rows saved before links existed
+      let changed = false;
+      arr.forEach(it=>{
+        if (it.link == null) {
+          const m = SEED.find(s=>s.cut===it.cut && s.shop===it.shop);
+          it.link = m ? m.link : '';
+          changed = true;
+        }
+      });
+      applyMigrations(arr);
+      if (changed) save(arr);
+      return arr;
+    }
+  } catch(e){}
+  const seeded = SEED.map((s,i)=>({id:'s'+i, ...s}));
+  save(seeded);
+  return seeded;
+}
+function save(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
+
+// one-time data corrections pushed to already-saved copies
+function applyMigrations(arr){
+  let done=[]; try{ done=JSON.parse(localStorage.getItem('churrasco_migrations')||'[]'); }catch(e){}
+  if(!done.includes('nosso_gta_only')){
+    arr.forEach(it=>{
+      if(it.cut==='Picanha' && it.shop==='Nosso Talho'){
+        it.noDeliver=true;
+        it.notes='AAA+ 3.5–3.75lb · GTA delivery only — does NOT deliver to Ottawa (price shown for reference)';
+      }
+    });
+    done.push('nosso_gta_only');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('local_shops_v1')){
+    const newShops = ['Farm 2 Fork', "Slipacoff's Premium Meats", 'The Piggy Market'];
+    SEED.filter(s=>newShops.includes(s.shop)).forEach(a=>{
+      if(!arr.some(it=>it.cut===a.cut && it.shop===a.shop))
+        arr.push({id:'m'+Math.random().toString(36).slice(2), ...a});
+    });
+    done.push('local_shops_v1');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('fill_prices_v1')){
+    // add the newly-added Wiser whole-ribeye row if missing
+    const seedRibeye = SEED.find(s=>s.cut==='Ancho (Ribeye)' && s.shop==='Wiser Meats');
+    if(seedRibeye && !arr.some(it=>it.cut==='Ancho (Ribeye)' && it.shop==='Wiser Meats'))
+      arr.push({id:'m'+Math.random().toString(36).slice(2), ...seedRibeye});
+    // fill Farm 2 Fork top sirloin price only if the user hasn't entered their own
+    const seedTS = SEED.find(s=>s.cut==='Alcatra' && s.shop==='Farm 2 Fork');
+    const curTS = arr.find(it=>it.cut==='Alcatra' && it.shop==='Farm 2 Fork');
+    if(seedTS && curTS && (curTS.price===''||curTS.price==null)){
+      curTS.price=seedTS.price; curTS.weight=seedTS.weight; curTS.unit=seedTS.unit;
+      curTS.live=seedTS.live; curTS.notes=seedTS.notes;
+    }
+    done.push('fill_prices_v1');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('costco_picanha_photo')){
+    // from user's in-store price-tag photo
+    const s = SEED.find(x=>x.cut==='Picanha' && x.shop==='Costco');
+    const c = arr.find(x=>x.cut==='Picanha' && x.shop==='Costco');
+    if(s && c && (c.price===''||c.price==null)){
+      c.price=s.price; c.weight=s.weight; c.unit=s.unit; c.live=s.live; c.notes=s.notes;
+    }
+    done.push('costco_picanha_photo');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('value_cuts_v1')){
+    const pairs=[['Brisket',"Slipacoff's Premium Meats"],['Striploin (NY strip)',"Slipacoff's Premium Meats"],
+      ['Ground beef','Farm 2 Fork'],['Ancho (Ribeye)',"Slipacoff's Premium Meats"],['Skirt steak','Wiser Meats']];
+    pairs.forEach(([c,s])=>{
+      const seed=SEED.find(x=>x.cut===c && x.shop===s);
+      if(seed && !arr.some(it=>it.cut===c && it.shop===s))
+        arr.push({id:'m'+Math.random().toString(36).slice(2), ...seed});
+    });
+    done.push('value_cuts_v1');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('striploin_more_v1')){
+    ['Farm 2 Fork','Wiser Meats'].forEach(s=>{
+      const seed=SEED.find(x=>x.cut==='Striploin (NY strip)' && x.shop===s);
+      if(seed && !arr.some(it=>it.cut==='Striploin (NY strip)' && it.shop===s))
+        arr.push({id:'m'+Math.random().toString(36).slice(2), ...seed});
+    });
+    done.push('striploin_more_v1');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('tenderloin_v1')){
+    SEED.filter(s=>s.cut==='Tenderloin (Filet)').forEach(seed=>{
+      if(!arr.some(it=>it.cut===seed.cut && it.shop===seed.shop))
+        arr.push({id:'m'+Math.random().toString(36).slice(2), ...seed});
+    });
+    done.push('tenderloin_v1');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('fix_striploin_link_v1')){
+    const c = arr.find(x=>x.cut==='Striploin (NY strip)' && x.shop==="Slipacoff's Premium Meats");
+    if(c && c.link==='https://premiummeatsonline.ca/collections/steaks-new')
+      c.link='https://premiummeatsonline.ca/collections/product-specials/products/sale-aaa-angus-striploin-steak-7-8-oz-7-for-77-copy';
+    done.push('fix_striploin_link_v1');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('fix_striploin_grade_note_v1')){
+    const c = arr.find(x=>x.cut==='Striploin (NY strip)' && x.shop==="Slipacoff's Premium Meats");
+    if(c && /^AAA 7–8oz/.test(c.notes||''))
+      c.notes='7–8oz ×12 steaks · grade NOT stated on listing (ask — may be lower than AAA) · sale $99 · delivers Ottawa';
+    done.push('fix_striploin_grade_note_v1');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  if(!done.includes('striploin_aaa_v1')){
+    const seed=SEED.find(x=>x.cut==='Striploin (NY strip)' && x.shop==="Slipacoff's Premium Meats (AAA)");
+    if(seed && !arr.some(it=>it.cut===seed.cut && it.shop===seed.shop))
+      arr.push({id:'m'+Math.random().toString(36).slice(2), ...seed});
+    done.push('striploin_aaa_v1');
+    localStorage.setItem('churrasco_migrations', JSON.stringify(done));
+    save(arr);
+  }
+  return arr;
+}
+function persist(){ save(items); }
+
+function toKg(w,u){ w=parseFloat(w); if(!(w>0)) return null; return u==='kg'?w:u==='lb'?w*LB:w*OZ; }
+function perKg(it){ const kg=toKg(it.weight,it.unit); const p=parseFloat(it.price); if(kg&&p>0) return p/kg; return null; }
+function fmt(n){ return n==null?'—':'$'+n.toFixed(2); }
+
+function render(){
+  // datalist of cuts
+  const cuts = [...new Set(items.map(i=>i.cut))];
+  document.getElementById('cutlist').innerHTML = cuts.map(c=>`<option value="${esc(c)}">`).join('');
+
+  // category pills
+  const cats=[['all','All'],['churrasco','🇧🇷 Brazilian churrasco'],['other','Other cuts']];
+  document.getElementById('catfilters').innerHTML = cats.map(([k,l])=>
+    `<span class="pill catpill ${k===catFilter?'active':''}" data-cf="${k}">${l}</span>`).join(' ');
+
+  // cut pills (limited to the chosen category)
+  const catCuts = cuts.filter(c=> catFilter==='all' || catOf(c)===catFilter);
+  if(filter!=='All' && !catCuts.includes(filter)) filter='All';
+  const allCuts = ['All', ...catCuts];
+  document.getElementById('filters').innerHTML = allCuts.map(c=>
+    `<span class="pill ${c===filter?'active':''}" data-f="${esc(c)}">${esc(c)}</span>`).join(' ');
+
+  // min per cut
+  const min = {};
+  items.forEach(it=>{ const v=perKg(it); if(v!=null && !it.noDeliver){ if(min[it.cut]==null||v<min[it.cut]) min[it.cut]=v; } });
+
+  const tb = document.getElementById('tbody'); tb.innerHTML='';
+  const shown = catCuts.filter(c=>filter==='All'||c===filter);
+  shown.forEach(cut=>{
+    const head=document.createElement('tr'); head.className='cut-head';
+    const badge = catOf(cut)==='churrasco'
+      ? '<span class="cat-badge br">🇧🇷 Churrasco</span>'
+      : '<span class="cat-badge ot">Other cut</span>';
+    head.innerHTML=`<td colspan="11">${esc(cut)}${badge}</td>`; tb.appendChild(head);
+    const rows = items.map((it,idx)=>({it,idx})).filter(r=>r.it.cut===cut)
+      .sort((a,b)=>{ const x=perKg(a.it),y=perKg(b.it); if(x==null)return 1; if(y==null)return -1; return x-y; });
+    rows.forEach(({it,idx})=>{
+      const pk=perKg(it), pl=pk==null?null:pk*LB;
+      const cheap = pk!=null && !it.noDeliver && min[cut]!=null && Math.abs(pk-min[cut])<1e-9;
+      const tr=document.createElement('tr');
+      tr.className = (cheap?'cheapest ':'') + (it.noDeliver?'nodeliver':'');
+      tr.innerHTML =
+        `<td>${esc(it.shop)}${it.live?' <span class="tag-live">live</span>':''}`+
+          `${it.noDeliver?' <span class="tag-no">no Ottawa delivery</span>':''}</td>`+
+        `<td><input class="cell-in" type="number" step="0.01" min="0" value="${it.price}" data-i="${idx}" data-k="price"></td>`+
+        `<td><input class="cell-in" type="number" step="0.01" min="0" value="${it.weight}" data-i="${idx}" data-k="weight"></td>`+
+        `<td><select class="cell-unit" data-i="${idx}" data-k="unit">`+
+          ['kg','lb','oz'].map(u=>`<option ${u===it.unit?'selected':''}>${u}</option>`).join('')+`</select></td>`+
+        `<td class="money"><b>${fmt(pk)}</b>${cheap?'<span class="badge">CHEAPEST</span>':''}</td>`+
+        `<td class="money">${fmt(pl)}</td>`+
+        `<td><input class="cell-grade" type="text" value="${esc(gradeOf(it))}" data-i="${idx}" data-k="grade" title="Canada grade as listed (AAA/AA/A/Prime are regulated; Angus is a breed/brand, not a grade; n/s = not stated)"></td>`+
+        `<td class="grill">${(()=>{const rt=ratingOf(it);let g='';for(let n=1;n<=5;n++)g+=`<span class="${n<=rt?'on':'off'}" data-i="${idx}" data-r="${n}" title="Rate ${n}/5 for the grill">★</span>`;return g;})()}</td>`+
+        `<td class="notes">${esc(it.notes||'')}</td>`+
+        `<td><input class="cell-link" type="url" placeholder="https://…" value="${esc(it.link||'')}" data-i="${idx}" data-k="link">`+
+          `${it.link?(isDirect(it.link)
+            ? `<a class="open" href="${esc(it.link)}" target="_blank" rel="noopener" title="Direct product page">↗</a>`
+            : `<a class="open notdirect" href="${esc(it.link)}" target="_blank" rel="noopener" title="Not a direct product page — this opens a store/search/category listing, so verify the exact item and price yourself">browse ⚠</a>`):''}</td>`+
+        `<td><button class="del" data-del="${idx}" title="Remove">✕</button></td>`;
+      tb.appendChild(tr);
+    });
+  });
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// events
+document.getElementById('addBtn').onclick=()=>{
+  const cut=val('f-cut').trim(), shop=val('f-shop').trim();
+  if(!cut||!shop){ alert('Enter at least a cut and a shop.'); return; }
+  items.push({id:'u'+Date.now(), cut, shop, price:val('f-price'), weight:val('f-weight'),
+    unit:val('f-unit'), live:false, notes:val('f-notes').trim(), link:val('f-link').trim()});
+  persist();
+  ['f-cut','f-shop','f-price','f-weight','f-notes','f-link'].forEach(id=>document.getElementById(id).value='');
+  render();
+};
+function val(id){ return document.getElementById(id).value; }
+
+// 'change' fires on blur/commit, so typing a multi-digit price is never interrupted
+document.getElementById('tbody').addEventListener('change', e=>{
+  const t=e.target; if(t.dataset.i==null) return;
+  items[t.dataset.i][t.dataset.k]=t.value; persist(); render();
+});
+document.getElementById('tbody').addEventListener('click', e=>{
+  if(e.target.dataset.r!=null && e.target.dataset.i!=null){
+    const n=Number(e.target.dataset.r), cur=ratingOf(items[e.target.dataset.i]);
+    items[e.target.dataset.i].rating = (n===cur) ? 0 : n;  // click current top star to clear to 0
+    persist(); render(); return;
+  }
+  if(e.target.dataset.del!=null){
+    if(confirm('Remove this row?')){ items.splice(e.target.dataset.del,1); persist(); render(); }
+  }
+});
+document.getElementById('filters').addEventListener('click', e=>{
+  if(e.target.dataset.f){ filter=e.target.dataset.f; render(); }
+});
+document.getElementById('catfilters').addEventListener('click', e=>{
+  if(e.target.dataset.cf){ catFilter=e.target.dataset.cf; filter='All'; render(); }
+});
+document.getElementById('resetBtn').onclick=()=>{
+  if(confirm('Reset everything back to the starting data? Your added items and edits will be lost.')){
+    localStorage.removeItem(KEY); items=load(); filter='All'; render();
+  }
+};
+
+render();
+</script>
+</body>
+</html>
