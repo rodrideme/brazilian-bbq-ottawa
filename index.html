@@ -97,7 +97,9 @@ tr.nodeliver .money b { text-decoration: line-through; }
 .mcard-head { display: flex; align-items: center; gap: 10px; padding: 11px 12px; cursor: pointer; }
 .mc-left { flex: 1; min-width: 0; }
 .mc-shop { font-weight: bold; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-term { font-size: 11px; color: #8a7c6b; font-style: italic; margin-top: 2px; }
 .mc-grade { font-size: 11px; color: #6b5d4f; margin-top: 3px; }
+.cut-en { font-weight: normal; font-size: 11px; color: #8a7c6b; font-style: italic; }
 .mc-right { text-align: right; }
 .mc-kg { font-weight: bold; font-size: 17px; color: #1B7A2F; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mc-kg span { font-size: 10px; color: #8a7c6b; font-weight: normal; }
@@ -249,6 +251,35 @@ const GRADES = {
   "Tenderloin (Filet)|Wiser Meats":"AAA", "Tenderloin (Filet)|Slipacoff's Premium Meats":"AAA"
 };
 function gradeOf(it){ return it.grade!=null ? it.grade : (GRADES[it.cut+'|'+it.shop] ?? ''); }
+
+// the shop's own product name / term for the cut (as listed at that store)
+const TERMS = {
+  "Picanha|Nosso Talho":"Picanha (AAA+)", "Picanha|Wiser Meats":"Picanha Roast", "Picanha|Ottawa Valley Meats":"Picanha Roast",
+  "Picanha|Costco":"Top Sirloin Cap Whole", "Picanha|Real Canadian Superstore":"Top Sirloin Cap (ask)",
+  "Picanha|Slipacoff's Premium Meats":"custom cut — ask", "Picanha|The Piggy Market":"custom cut — ask",
+  "Fraldinha|Wiser Meats":"Flank Steak", "Fraldinha|Real Canadian Superstore":"Flank Grilling Steak", "Fraldinha|The Piggy Market":"custom cut — ask",
+  "Costela|Wiser Meats":"Beef Back Ribs", "Costela|Costco":"Beef Back Ribs", "Costela|Real Canadian Superstore":"Beef Ribs",
+  "Ancho (Ribeye)|Costco":"Boneless Ribeye", "Ancho (Ribeye)|Real Canadian Superstore":"Cert. Angus Ribeye",
+  "Ancho (Ribeye)|Wiser Meats":"Whole Ribeye (Boneless)", "Ancho (Ribeye)|Farm 2 Fork":"Angus Ribeye Steaks", "Ancho (Ribeye)|Slipacoff's Premium Meats":"Angus Ribeye Steak",
+  "Alcatra|Costco":"Top Sirloin", "Alcatra|Real Canadian Superstore":"Top Sirloin Steak", "Alcatra|Farm 2 Fork":"Top Sirloin Steaks",
+  "Linguiça|Portuguese / Latin market":"Linguiça (sausage)", "Linguiça|Real Canadian Superstore":"Portuguese sausage",
+  "Coração|Specialty butcher":"Chicken Hearts", "Coração|The Piggy Market":"Chicken Hearts",
+  "Brisket|Slipacoff's Premium Meats":"AAA Beef Brisket",
+  "Striploin (NY strip)|Slipacoff's Premium Meats":"Striploin Steak 7–8oz", "Striploin (NY strip)|Slipacoff's Premium Meats (AAA)":"AAA Angus Striploin 9–10oz",
+  "Striploin (NY strip)|Farm 2 Fork":"Striploin Steak Special", "Striploin (NY strip)|Wiser Meats":"NY Striploin Centre-Cut",
+  "Ground beef|Farm 2 Fork":"Grass Fed Medium Ground Beef",
+  "Skirt steak|Wiser Meats":"Skirt Steak",
+  "Tenderloin (Filet)|Wiser Meats":"Whole Tenderloin", "Tenderloin (Filet)|Slipacoff's Premium Meats":"Beef Tenderloin / Filet Mignon"
+};
+function termOf(it){ return it.term!=null ? it.term : (TERMS[it.cut+'|'+it.shop] ?? ''); }
+
+// English name for cuts whose group name is Brazilian-only (others already show English in their name)
+const ENGLISH = {
+  "Picanha":"top sirloin cap", "Fraldinha":"flank steak / bavette", "Costela":"beef ribs",
+  "Alcatra":"top sirloin", "Linguiça":"Portuguese sausage", "Coração":"chicken hearts"
+};
+function englishOf(cut){ return ENGLISH[cut] || ''; }
+function cutLabel(cut){ const en=englishOf(cut); return esc(cut)+(en?` <span class="cut-en">(${esc(en)})</span>`:''); }
 
 function load(){
   try {
@@ -422,7 +453,7 @@ function render(){
     shown.forEach(cut=>{
       const isCh = catOf(cut)==='churrasco';
       const h=document.createElement('div'); h.className='m-cuthead';
-      h.innerHTML=`${esc(cut)} <span class="cat-badge ${isCh?'br':'ot'}">${isCh?'🇧🇷 Churrasco':'Other cut'}</span>`;
+      h.innerHTML=`${cutLabel(cut)} <span class="cat-badge ${isCh?'br':'ot'}">${isCh?'🇧🇷 Churrasco':'Other cut'}</span>`;
       ml.appendChild(h);
       sortRows(cut).forEach(({it,idx})=>{
         const pk=perKg(it), pl=pk==null?null:pk*LB;
@@ -434,6 +465,7 @@ function render(){
         card.innerHTML=
           `<div class="mcard-head" data-toggle="${it.id}">`+
             `<div class="mc-left"><div class="mc-shop">${esc(it.shop)}${it.live?' <span class="tag-live">live</span>':''}${it.noDeliver?' <span class="tag-no">no delivery</span>':''}</div>`+
+            `${termOf(it)?`<div class="mc-term">${esc(termOf(it))}</div>`:''}`+
             `<div class="mc-grade">${esc(gradeOf(it))||'—'}${cheap?' · <b style="color:#1B7A2F">cheapest</b>':''}</div></div>`+
             `<div class="mc-right"><div class="mc-kg${pk==null?' na':''}">${fmt(pk)}<span> /kg</span></div></div>`+
             `<span class="mc-chev">${open?'▾':'▸'}</span>`+
@@ -466,7 +498,7 @@ function render(){
     const badge = catOf(cut)==='churrasco'
       ? '<span class="cat-badge br">🇧🇷 Churrasco</span>'
       : '<span class="cat-badge ot">Other cut</span>';
-    head.innerHTML=`<td colspan="11">${esc(cut)}${badge}</td>`; tb.appendChild(head);
+    head.innerHTML=`<td colspan="11">${cutLabel(cut)}${badge}</td>`; tb.appendChild(head);
     const rows = items.map((it,idx)=>({it,idx})).filter(r=>r.it.cut===cut)
       .sort((a,b)=>{ const x=perKg(a.it),y=perKg(b.it); if(x==null)return 1; if(y==null)return -1; return x-y; });
     rows.forEach(({it,idx})=>{
