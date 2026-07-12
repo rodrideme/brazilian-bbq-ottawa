@@ -88,6 +88,41 @@ tr.nodeliver .money b { text-decoration: line-through; }
 .cat-badge { font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
 .cat-badge.br { background: #e7f4ea; color: #1B7A2F; border: 1px solid #b7e0c2; }
 .cat-badge.ot { background: #eef2f7; color: #4a5a70; border: 1px solid #cdd8e6; }
+/* ---- mobile card view ---- */
+.mobile-list { display: none; }
+.m-cuthead { margin: 16px 0 7px; font-weight: bold; color: #7B3F00; font-size: 15px; }
+.mcard { border: 1px solid #e7ddd0; border-radius: 10px; margin-bottom: 8px; background: #fff; overflow: hidden; }
+.mcard.cheap { border-color: #9ed6ac; background: #f2fbf4; }
+.mcard.nod { opacity: .65; }
+.mcard-head { display: flex; align-items: center; gap: 10px; padding: 11px 12px; cursor: pointer; }
+.mc-left { flex: 1; min-width: 0; }
+.mc-shop { font-weight: bold; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-grade { font-size: 11px; color: #6b5d4f; margin-top: 3px; }
+.mc-right { text-align: right; }
+.mc-kg { font-weight: bold; font-size: 17px; color: #1B7A2F; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mc-kg span { font-size: 10px; color: #8a7c6b; font-weight: normal; }
+.mc-kg.na { color: #b9ab97; }
+.mcard.nod .mc-kg { text-decoration: line-through; color: #a99; }
+.mc-chev { color: #b79a6d; font-size: 13px; width: 12px; }
+.mcard-body { padding: 4px 12px 12px; border-top: 1px solid #f0e7db; }
+.mb-row { display: flex; gap: 8px; margin: 10px 0 6px; }
+.mb-row label { flex: 1; font-size: 11px; color: #6b5d4f; }
+.mb-row input, .mb-row select { width: 100%; margin-top: 2px; }
+.mb-row2 { font-size: 13px; color: #3a3126; margin: 7px 0; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.mb-row2 .cell-grade { width: 70px; }
+.mb-row2 .cell-link { width: 100%; max-width: 220px; }
+.mb-link { flex-direction: row; }
+.mb-notes { font-size: 12px; color: #6b5d4f; margin: 6px 0; line-height: 1.35; }
+.mcard .del { font-size: 13px; color: #b23; border: 1px solid #eecccc; border-radius: 6px; padding: 5px 10px; background: #fff; margin-top: 4px; }
+
+@media (max-width: 640px) {
+  body { padding: 12px; }
+  h1 { font-size: 19px; }
+  .card { padding: 12px; }
+  .addgrid { grid-template-columns: 1fr 1fr; }
+  .addgrid > div:last-child { grid-column: 1 / -1; }
+  .btn-add { width: 100%; }
+}
 </style>
 </head>
 <body>
@@ -119,7 +154,7 @@ tr.nodeliver .money b { text-decoration: line-through; }
     <button class="btn-ghost" id="resetBtn">Reset to starting data</button>
   </div>
   <div class="toolbar" style="margin-top:6px"><span class="cutlbl">Cut:</span><span id="filters"></span></div>
-  <div style="overflow-x:auto">
+  <div id="tableWrap" style="overflow-x:auto">
     <table id="tbl">
       <thead><tr>
         <th>Shop</th><th>Price&nbsp;($)</th><th>Weight</th><th>Unit</th>
@@ -128,6 +163,7 @@ tr.nodeliver .money b { text-decoration: line-through; }
       <tbody id="tbody"></tbody>
     </table>
   </div>
+  <div id="mobileList" class="mobile-list"></div>
   <div class="footer">Green row = cheapest $/kg for that cut. Blue "live" tag = price I fetched Jul 2026 (a snapshot — verify before buying). ★ Grill rating = how good the cut is for churrasco (0–5, strict) — click a star to set it, or click the last filled star to clear to 0. Offer link: ↗ = direct product page; orange "browse ⚠" = a store/search/category page (no direct product link), so verify the exact item and price. Grade: AAA / AA / A / Prime are regulated Canada grades (marbling); "Angus" is breed/brand marketing, not a grade; "n/s" = grade not stated on the listing. Prices change; buttons and edits save instantly.</div>
 </div>
 
@@ -174,6 +210,7 @@ const SEED = [
 let items = load();
 let filter = 'All';
 let catFilter = 'all';
+const expanded = new Set(); // ids of expanded cards in mobile view
 
 // which cut names count as Brazilian churrasco (everything else = "other cut")
 const CHURRASCO = ['Picanha','Fraldinha','Costela','Ancho (Ribeye)','Alcatra','Linguiça','Coração'];
@@ -373,8 +410,57 @@ function render(){
   const min = {};
   items.forEach(it=>{ const v=perKg(it); if(v!=null && !it.noDeliver){ if(min[it.cut]==null||v<min[it.cut]) min[it.cut]=v; } });
 
-  const tb = document.getElementById('tbody'); tb.innerHTML='';
   const shown = catCuts.filter(c=>filter==='All'||c===filter);
+  const sortRows = cut => items.map((it,idx)=>({it,idx})).filter(r=>r.it.cut===cut)
+      .sort((a,b)=>{ const x=perKg(a.it),y=perKg(b.it); if(x==null)return 1; if(y==null)return -1; return x-y; });
+
+  // ---- mobile card view ----
+  if(window.matchMedia('(max-width: 640px)').matches){
+    document.getElementById('tableWrap').style.display='none';
+    document.getElementById('tbody').innerHTML='';
+    const ml=document.getElementById('mobileList'); ml.style.display='block'; ml.innerHTML='';
+    shown.forEach(cut=>{
+      const isCh = catOf(cut)==='churrasco';
+      const h=document.createElement('div'); h.className='m-cuthead';
+      h.innerHTML=`${esc(cut)} <span class="cat-badge ${isCh?'br':'ot'}">${isCh?'🇧🇷 Churrasco':'Other cut'}</span>`;
+      ml.appendChild(h);
+      sortRows(cut).forEach(({it,idx})=>{
+        const pk=perKg(it), pl=pk==null?null:pk*LB;
+        const cheap = pk!=null && !it.noDeliver && min[cut]!=null && Math.abs(pk-min[cut])<1e-9;
+        const open = expanded.has(it.id);
+        const stars=(()=>{let g='';const rt=ratingOf(it);for(let n=1;n<=5;n++)g+=`<span class="${n<=rt?'on':'off'}" data-i="${idx}" data-r="${n}">★</span>`;return g;})();
+        const card=document.createElement('div');
+        card.className='mcard'+(cheap?' cheap':'')+(it.noDeliver?' nod':'');
+        card.innerHTML=
+          `<div class="mcard-head" data-toggle="${it.id}">`+
+            `<div class="mc-left"><div class="mc-shop">${esc(it.shop)}${it.live?' <span class="tag-live">live</span>':''}${it.noDeliver?' <span class="tag-no">no delivery</span>':''}</div>`+
+            `<div class="mc-grade">${esc(gradeOf(it))||'—'}${cheap?' · <b style="color:#1B7A2F">cheapest</b>':''}</div></div>`+
+            `<div class="mc-right"><div class="mc-kg${pk==null?' na':''}">${fmt(pk)}<span> /kg</span></div></div>`+
+            `<span class="mc-chev">${open?'▾':'▸'}</span>`+
+          `</div>`+
+          `<div class="mcard-body" style="${open?'':'display:none'}">`+
+            `<div class="mb-row">`+
+              `<label>Price $<input class="cell-in" type="number" step="0.01" min="0" value="${it.price}" data-i="${idx}" data-k="price"></label>`+
+              `<label>Weight<input class="cell-in" type="number" step="0.01" min="0" value="${it.weight}" data-i="${idx}" data-k="weight"></label>`+
+              `<label>Unit<select class="cell-unit" data-i="${idx}" data-k="unit">`+['kg','lb','oz'].map(u=>`<option ${u===it.unit?'selected':''}>${u}</option>`).join('')+`</select></label>`+
+            `</div>`+
+            `<div class="mb-row2"><span>$/lb: <b>${fmt(pl)}</b></span><span>Grade: <input class="cell-grade" type="text" value="${esc(gradeOf(it))}" data-i="${idx}" data-k="grade"></span></div>`+
+            `<div class="mb-row2">Grill: <span class="grill">${stars}</span></div>`+
+            (it.notes?`<div class="mb-notes">${esc(it.notes)}</div>`:'')+
+            `<div class="mb-row2 mb-link">Link: <input class="cell-link" type="url" placeholder="https://…" value="${esc(it.link||'')}" data-i="${idx}" data-k="link">`+
+              `${it.link?(isDirect(it.link)?`<a class="open" href="${esc(it.link)}" target="_blank" rel="noopener">↗</a>`:`<a class="open notdirect" href="${esc(it.link)}" target="_blank" rel="noopener">browse ⚠</a>`):''}</div>`+
+            `<div><button class="del" data-del="${idx}">✕ Remove</button></div>`+
+          `</div>`;
+        ml.appendChild(card);
+      });
+    });
+    return;
+  }
+
+  // ---- desktop table view ----
+  document.getElementById('tableWrap').style.display='';
+  document.getElementById('mobileList').style.display='none';
+  const tb = document.getElementById('tbody'); tb.innerHTML='';
   shown.forEach(cut=>{
     const head=document.createElement('tr'); head.className='cut-head';
     const badge = catOf(cut)==='churrasco'
@@ -425,11 +511,13 @@ document.getElementById('addBtn').onclick=()=>{
 function val(id){ return document.getElementById(id).value; }
 
 // 'change' fires on blur/commit, so typing a multi-digit price is never interrupted
-document.getElementById('tbody').addEventListener('change', e=>{
+function onCellChange(e){
   const t=e.target; if(t.dataset.i==null) return;
   items[t.dataset.i][t.dataset.k]=t.value; persist(); render();
-});
-document.getElementById('tbody').addEventListener('click', e=>{
+}
+function onRowClick(e){
+  const tog=e.target.closest('[data-toggle]');   // mobile card expand/collapse
+  if(tog){ const id=tog.dataset.toggle; if(expanded.has(id))expanded.delete(id); else expanded.add(id); render(); return; }
   if(e.target.dataset.r!=null && e.target.dataset.i!=null){
     const n=Number(e.target.dataset.r), cur=ratingOf(items[e.target.dataset.i]);
     items[e.target.dataset.i].rating = (n===cur) ? 0 : n;  // click current top star to clear to 0
@@ -438,7 +526,14 @@ document.getElementById('tbody').addEventListener('click', e=>{
   if(e.target.dataset.del!=null){
     if(confirm('Remove this row?')){ items.splice(e.target.dataset.del,1); persist(); render(); }
   }
+}
+['tbody','mobileList'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('change', onCellChange);
+  el.addEventListener('click', onRowClick);
 });
+// re-render when crossing the mobile/desktop breakpoint
+window.matchMedia('(max-width: 640px)').addEventListener('change', render);
 document.getElementById('filters').addEventListener('click', e=>{
   if(e.target.dataset.f){ filter=e.target.dataset.f; render(); }
 });
